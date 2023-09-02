@@ -4,36 +4,46 @@ namespace Main.Scripts
 {
     public class TargetMovement : MonoBehaviour
     {
-        [SerializeField] private Transform[] _movePoints;
-        [SerializeField] private float _moveSpeed = 2.0f;
-        [SerializeField] private float _pauseDuration = 1.0f;
+        [SerializeField] private Collider groundCollider;
+        [SerializeField] private float _moveSpeed;
 
-        private int _currentPointIndex;
-        private bool _isPaused;
-        private float _pauseTimer;
-    
-        private void Update()
+        private Rigidbody _rigidbody;
+        private Vector3 _targetPosition;
+
+        private void Awake()
         {
-            PatrolBetweenPoints();
+            _rigidbody = GetComponent<Rigidbody>();
         }
 
-        private void PatrolBetweenPoints()
+        private void Start()
         {
-            if (!_isPaused)
-            {
-                transform.position = Vector3.MoveTowards(transform.position,
-                    _movePoints[_currentPointIndex].position, _moveSpeed * Time.deltaTime);
+            GenerateRandomTargetPosition();
+        }
 
-                if (!(Vector3.Distance(transform.position, _movePoints[_currentPointIndex].position) < 0.01f)) return;
-                _isPaused = true;
-                _pauseTimer = 0f;
-            }
-            else
+        private void FixedUpdate()
+        {
+            MoveToTargetPosition();
+        }
+
+        private void GenerateRandomTargetPosition()
+        {
+            var randomPoint = new Vector3(
+                Random.Range(groundCollider.bounds.min.x, groundCollider.bounds.max.x),
+                transform.position.y,
+                Random.Range(groundCollider.bounds.min.z, groundCollider.bounds.max.z)
+            );
+
+            _targetPosition = randomPoint;
+        }
+
+        private void MoveToTargetPosition()
+        {
+            var moveDirection = (_targetPosition - transform.position).normalized;
+            _rigidbody.velocity = moveDirection * _moveSpeed;
+
+            if (Vector3.Distance(transform.position, _targetPosition) < 0.1f)
             {
-                _pauseTimer += Time.deltaTime;
-                if (!(_pauseTimer >= _pauseDuration)) return;
-                _isPaused = false;
-                _currentPointIndex = (_currentPointIndex + 1) % _movePoints.Length;
+                GenerateRandomTargetPosition();
             }
         }
     }
